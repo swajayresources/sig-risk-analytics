@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+venv/
+.venv/
+*.egg-info/
+
+# Streamlit
+.streamlit/
+
+# Databases (auto-generated)
+*.db
+
+# Logs
+streamlit_dashboard/logs/
+*.log
+
+# Data cache
+streamlit_dashboard/data/
+
+# Build
+build/
+dist/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

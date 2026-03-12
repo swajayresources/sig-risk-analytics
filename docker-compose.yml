@@ -1,0 +1,208 @@
+version: '3.8'
+
+services:
+  # Risk Analytics Engine Core
+  risk-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: risk-analytics-engine
+    ports:
+      - "8000:8000"  # API port
+    environment:
+      - ENVIRONMENT=production
+      - LOG_LEVEL=INFO
+      - REDIS_URL=redis://redis:6379
+      - POSTGRES_URL=postgresql://risk_user:risk_password@postgres:5432/risk_analytics
+      - CLICKHOUSE_URL=http://clickhouse:8123
+    volumes:
+      - ./config:/app/config
+      - ./data:/app/data
+      - ./logs:/app/logs
+    depends_on:
+      - redis
+      - postgres
+      - clickhouse
+    restart: unless-stopped
+    networks:
+      - risk-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: risk-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 2gb --maxmemory-policy allkeys-lru
+    restart: unless-stopped
+    networks:
+      - risk-network
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: risk-postgres
+    environment:
+      POSTGRES_DB: risk_analytics
+      POSTGRES_USER: risk_user
+      POSTGRES_PASSWORD: risk_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+    restart: unless-stopped
+    networks:
+      - risk-network
+
+  # ClickHouse Time Series Database
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: risk-clickhouse
+    ports:
+      - "8123:8123"  # HTTP port
+      - "9000:9000"  # Native port
+    environment:
+      CLICKHOUSE_DB: risk_analytics
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: ""
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./scripts/init_clickhouse.sql:/docker-entrypoint-initdb.d/init_clickhouse.sql
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    restart: unless-stopped
+    networks:
+      - risk-network
+
+  # Web Frontend
+  web-frontend:
+    build:
+      context: ./web/frontend
+      dockerfile: Dockerfile
+    container_name: risk-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+      - REACT_APP_WS_URL=ws://localhost:8000
+    depends_on:
+      - risk-engine
+    restart: unless-stopped
+    networks:
+      - risk-network
+
+  # Prometheus Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: risk-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    networks:
+      - risk-network
+
+  # Grafana Dashboards
+  grafana:
+    image: grafana/grafana:latest
+    container_name: risk-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./config/grafana/datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    networks:
+      - risk-network
+
+  # Market Data Simulator
+  market-simulator:
+    build:
+      context: ./scripts/market_simulator
+      dockerfile: Dockerfile
+    container_name: risk-market-simulator
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - UPDATE_FREQUENCY_MS=100
+      - SYMBOLS=AAPL,GOOGL,MSFT,TSLA,SPY,QQQ,GLD,TLT,VIX
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - risk-network
+
+  # Backup Service
+  backup:
+    image: postgres:15-alpine
+    container_name: risk-backup
+    environment:
+      PGHOST: postgres
+      PGUSER: risk_user
+      PGPASSWORD: risk_password
+      PGDATABASE: risk_analytics
+    volumes:
+      - ./backups:/backups
+      - ./scripts/backup.sh:/backup.sh
+    entrypoint: /bin/sh
+    command: -c "chmod +x /backup.sh && /backup.sh"
+    depends_on:
+      - postgres
+    restart: "no"
+    networks:
+      - risk-network
+
+  # Load Balancer (for production scaling)
+  nginx:
+    image: nginx:alpine
+    container_name: risk-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./config/nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - risk-engine
+      - web-frontend
+    restart: unless-stopped
+    networks:
+      - risk-network
+
+volumes:
+  redis_data:
+    driver: local
+  postgres_data:
+    driver: local
+  clickhouse_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  risk-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

@@ -1,0 +1,364 @@
+# CMakeLists.txt for High-Performance Computing Risk Analytics Framework
+# Production-grade build configuration with optimization flags
+
+cmake_minimum_required(VERSION 3.20)
+project(QuantitativeRiskAnalyticsHPC VERSION 1.0.0 LANGUAGES CXX CUDA)
+
+# Set C++ standard
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Build type
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
+
+# Compiler-specific optimizations
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=native -mtune=native -flto")
+    set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -Wall -Wextra")
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=native -mtune=native -flto")
+    set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -Wall -Wextra")
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    set(CMAKE_CXX_FLAGS_RELEASE "/O2 /DNDEBUG /arch:AVX2")
+    set(CMAKE_CXX_FLAGS_DEBUG "/Od /Zi /Wall")
+endif()
+
+# Enable SIMD and vectorization
+add_compile_definitions(USE_SIMD)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    add_compile_options(-mavx2 -mfma -ftree-vectorize -ffast-math)
+endif()
+
+# OpenMP support
+find_package(OpenMP REQUIRED)
+if(OpenMP_CXX_FOUND)
+    add_compile_definitions(USE_OPENMP)
+endif()
+
+# CUDA support
+find_package(CUDA QUIET)
+if(CUDA_FOUND)
+    enable_language(CUDA)
+    add_compile_definitions(USE_CUDA)
+    set(CMAKE_CUDA_STANDARD 17)
+    set(CMAKE_CUDA_FLAGS_RELEASE "-O3 -use_fast_math -lineinfo")
+    set(CMAKE_CUDA_FLAGS_DEBUG "-O0 -g -G")
+endif()
+
+# OpenCL support
+find_package(OpenCL QUIET)
+if(OpenCL_FOUND)
+    add_compile_definitions(USE_OPENCL)
+endif()
+
+# Required packages
+find_package(Threads REQUIRED)
+find_package(Boost REQUIRED COMPONENTS system thread)
+find_package(Eigen3 REQUIRED)
+
+# Optional packages
+find_package(PkgConfig)
+if(PkgConfig_FOUND)
+    pkg_check_modules(ZMQ libzmq)
+    if(ZMQ_FOUND)
+        add_compile_definitions(USE_ZMQ)
+    endif()
+endif()
+
+# Intel MKL (if available)
+find_package(MKL QUIET)
+if(MKL_FOUND)
+    add_compile_definitions(USE_INTEL_MKL)
+endif()
+
+# NUMA support (Linux only)
+if(UNIX AND NOT APPLE)
+    find_library(NUMA_LIBRARY numa)
+    if(NUMA_LIBRARY)
+        add_compile_definitions(USE_NUMA)
+    endif()
+endif()
+
+# Include directories
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
+include_directories(${Boost_INCLUDE_DIRS})
+include_directories(${EIGEN3_INCLUDE_DIR})
+
+if(CUDA_FOUND)
+    include_directories(${CUDA_INCLUDE_DIRS})
+endif()
+
+if(OpenCL_FOUND)
+    include_directories(${OpenCL_INCLUDE_DIRS})
+endif()
+
+if(ZMQ_FOUND)
+    include_directories(${ZMQ_INCLUDE_DIRS})
+endif()
+
+# Source files
+set(HPC_SOURCES
+    src/hpc/hpc_framework.cpp
+    src/hpc/parallel_risk_engine.cpp
+    src/hpc/performance_monitor.cpp
+    src/hpc/distributed_architecture.cpp
+    src/hpc/lockfree_structures.cpp
+    src/hpc/realtime_pipeline.cpp
+)
+
+# CUDA sources
+if(CUDA_FOUND)
+    set(HPC_CUDA_SOURCES
+        src/hpc/gpu_monte_carlo.cu
+    )
+endif()
+
+# Header files
+set(HPC_HEADERS
+    include/hpc/hpc_framework.hpp
+    include/hpc/parallel_risk_engine.hpp
+    include/hpc/performance_monitor.hpp
+    include/hpc/distributed_architecture.hpp
+    include/hpc/lockfree_structures.hpp
+    include/hpc/realtime_pipeline.hpp
+)
+
+# Create HPC library
+if(CUDA_FOUND)
+    add_library(hpc_risk_analytics ${HPC_SOURCES} ${HPC_CUDA_SOURCES} ${HPC_HEADERS})
+else()
+    add_library(hpc_risk_analytics ${HPC_SOURCES} ${HPC_HEADERS})
+endif()
+
+# Set library properties
+set_target_properties(hpc_risk_analytics PROPERTIES
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED ON
+    POSITION_INDEPENDENT_CODE ON
+)
+
+if(CUDA_FOUND)
+    set_target_properties(hpc_risk_analytics PROPERTIES
+        CUDA_STANDARD 17
+        CUDA_STANDARD_REQUIRED ON
+        CUDA_SEPARABLE_COMPILATION ON
+    )
+endif()
+
+# Link libraries
+target_link_libraries(hpc_risk_analytics
+    ${Boost_LIBRARIES}
+    Threads::Threads
+)
+
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(hpc_risk_analytics OpenMP::OpenMP_CXX)
+endif()
+
+if(CUDA_FOUND)
+    target_link_libraries(hpc_risk_analytics
+        ${CUDA_LIBRARIES}
+        ${CUDA_CUBLAS_LIBRARIES}
+        ${CUDA_CURAND_LIBRARIES}
+    )
+endif()
+
+if(OpenCL_FOUND)
+    target_link_libraries(hpc_risk_analytics ${OpenCL_LIBRARIES})
+endif()
+
+if(ZMQ_FOUND)
+    target_link_libraries(hpc_risk_analytics ${ZMQ_LIBRARIES})
+endif()
+
+if(MKL_FOUND)
+    target_link_libraries(hpc_risk_analytics ${MKL_LIBRARIES})
+endif()
+
+if(NUMA_LIBRARY)
+    target_link_libraries(hpc_risk_analytics ${NUMA_LIBRARY})
+endif()
+
+# Platform-specific libraries
+if(WIN32)
+    target_link_libraries(hpc_risk_analytics ws2_32 pdh psapi)
+elseif(UNIX)
+    target_link_libraries(hpc_risk_analytics rt dl)
+endif()
+
+# Demo executable
+add_executable(hpc_demo examples/hpc_risk_analytics_demo.cpp)
+target_link_libraries(hpc_demo hpc_risk_analytics)
+
+# Set executable properties
+set_target_properties(hpc_demo PROPERTIES
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED ON
+)
+
+# Benchmarks executable
+add_executable(hpc_benchmarks
+    benchmarks/hpc_performance_benchmarks.cpp
+)
+target_link_libraries(hpc_benchmarks hpc_risk_analytics)
+
+# Unit tests
+enable_testing()
+
+add_executable(hpc_tests
+    tests/test_lockfree_structures.cpp
+    tests/test_parallel_algorithms.cpp
+    tests/test_performance_monitoring.cpp
+    tests/test_distributed_processing.cpp
+)
+
+target_link_libraries(hpc_tests hpc_risk_analytics)
+
+# Add tests
+add_test(NAME LockFreeStructuresTest COMMAND hpc_tests --test=lockfree)
+add_test(NAME ParallelAlgorithmsTest COMMAND hpc_tests --test=parallel)
+add_test(NAME PerformanceMonitoringTest COMMAND hpc_tests --test=monitoring)
+add_test(NAME DistributedProcessingTest COMMAND hpc_tests --test=distributed)
+
+# Installation
+install(TARGETS hpc_risk_analytics hpc_demo hpc_benchmarks
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+)
+
+install(FILES ${HPC_HEADERS}
+    DESTINATION include/hpc
+)
+
+# Documentation
+find_package(Doxygen)
+if(DOXYGEN_FOUND)
+    set(DOXYGEN_IN ${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile.in)
+    set(DOXYGEN_OUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
+
+    configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
+
+    add_custom_target(docs
+        COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        COMMENT "Generating API documentation with Doxygen"
+        VERBATIM
+    )
+endif()
+
+# Packaging
+set(CPACK_PACKAGE_NAME "QuantitativeRiskAnalyticsHPC")
+set(CPACK_PACKAGE_VERSION "1.0.0")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "High-Performance Computing Framework for Risk Analytics")
+set(CPACK_PACKAGE_VENDOR "SIG Quantitative Risk Team")
+set(CPACK_PACKAGE_CONTACT "risk-engine-support@example.com")
+
+include(CPack)
+
+# Performance profiling support
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    option(ENABLE_PROFILING "Enable performance profiling" OFF)
+    if(ENABLE_PROFILING)
+        if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+            target_compile_options(hpc_risk_analytics PRIVATE -pg)
+            target_link_options(hpc_risk_analytics PRIVATE -pg)
+        endif()
+    endif()
+endif()
+
+# Address sanitizer (debug builds)
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    option(ENABLE_ASAN "Enable Address Sanitizer" OFF)
+    if(ENABLE_ASAN)
+        target_compile_options(hpc_risk_analytics PRIVATE -fsanitize=address)
+        target_link_options(hpc_risk_analytics PRIVATE -fsanitize=address)
+    endif()
+endif()
+
+# Memory debugging
+option(ENABLE_VALGRIND "Enable Valgrind support" OFF)
+if(ENABLE_VALGRIND)
+    find_program(VALGRIND_PROGRAM valgrind)
+    if(VALGRIND_PROGRAM)
+        add_custom_target(valgrind
+            COMMAND ${VALGRIND_PROGRAM} --tool=memcheck --leak-check=full --show-leak-kinds=all
+                    --track-origins=yes --verbose $<TARGET_FILE:hpc_demo>
+            DEPENDS hpc_demo
+        )
+    endif()
+endif()
+
+# Performance testing
+add_custom_target(perf_test
+    COMMAND $<TARGET_FILE:hpc_benchmarks>
+    DEPENDS hpc_benchmarks
+    COMMENT "Running performance benchmarks"
+)
+
+# Static analysis
+find_program(CPPCHECK_PROGRAM cppcheck)
+if(CPPCHECK_PROGRAM)
+    add_custom_target(cppcheck
+        COMMAND ${CPPCHECK_PROGRAM} --enable=all --std=c++20 --verbose
+                --suppress=missingInclude ${CMAKE_CURRENT_SOURCE_DIR}/src
+        COMMENT "Running static analysis with cppcheck"
+    )
+endif()
+
+# Clang-tidy
+find_program(CLANG_TIDY_PROGRAM clang-tidy)
+if(CLANG_TIDY_PROGRAM)
+    set_target_properties(hpc_risk_analytics PROPERTIES
+        CXX_CLANG_TIDY "${CLANG_TIDY_PROGRAM};-checks=*,-fuchsia-*,-google-*,-zircon-*,-abseil-*,-llvm-*"
+    )
+endif()
+
+# Code coverage (debug builds)
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    option(ENABLE_COVERAGE "Enable code coverage" OFF)
+    if(ENABLE_COVERAGE)
+        if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+            target_compile_options(hpc_risk_analytics PRIVATE --coverage)
+            target_link_options(hpc_risk_analytics PRIVATE --coverage)
+
+            add_custom_target(coverage
+                COMMAND lcov --capture --directory . --output-file coverage.info
+                COMMAND lcov --remove coverage.info '/usr/*' --output-file coverage.info
+                COMMAND lcov --list coverage.info
+                COMMAND genhtml coverage.info --output-directory coverage_html
+                WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+                COMMENT "Generating code coverage report"
+            )
+        endif()
+    endif()
+endif()
+
+# Print build configuration summary
+message(STATUS "")
+message(STATUS "=== Build Configuration Summary ===")
+message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "C++ Standard: ${CMAKE_CXX_STANDARD}")
+message(STATUS "Compiler: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
+message(STATUS "")
+message(STATUS "Optional Features:")
+message(STATUS "  OpenMP: ${OpenMP_CXX_FOUND}")
+message(STATUS "  CUDA: ${CUDA_FOUND}")
+message(STATUS "  OpenCL: ${OpenCL_FOUND}")
+message(STATUS "  ZeroMQ: ${ZMQ_FOUND}")
+message(STATUS "  Intel MKL: ${MKL_FOUND}")
+message(STATUS "  NUMA: ${NUMA_LIBRARY}")
+message(STATUS "")
+message(STATUS "Build Targets:")
+message(STATUS "  hpc_risk_analytics (library)")
+message(STATUS "  hpc_demo (executable)")
+message(STATUS "  hpc_benchmarks (executable)")
+message(STATUS "  hpc_tests (executable)")
+if(DOXYGEN_FOUND)
+    message(STATUS "  docs (documentation)")
+endif()
+message(STATUS "===================================")
+message(STATUS "")

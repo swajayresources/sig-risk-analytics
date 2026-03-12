@@ -1,0 +1,313 @@
+# Quantitative Risk Analytics Engine Configuration
+
+# Position Engine Settings
+position_engine:
+  max_positions: 1000000
+  max_symbols: 100000
+  monitoring_interval_ms: 1000
+  cleanup_interval_s: 300
+  enable_persistence: true
+  persistence_file: "data/positions.dat"
+
+# Risk Calculation Settings
+risk_calculation:
+  # Monte Carlo Settings
+  monte_carlo:
+    default_scenarios: 100000
+    max_scenarios: 1000000
+    confidence_levels: [0.95, 0.99, 0.995]
+    horizon_days: [1, 10, 22]
+    use_antithetic_variates: true
+    use_control_variates: true
+    num_threads: 0  # 0 = auto-detect
+
+  # Historical Simulation
+  historical_simulation:
+    lookback_days: 252
+    min_observations: 100
+    bootstrap_samples: 1000
+
+  # Parametric VaR
+  parametric_var:
+    covariance_estimation: "ledoit_wolf"  # sample, ledoit_wolf, shrinkage
+    shrinkage_intensity: 0.1
+    decay_factor: 0.94
+
+  # Factor Model
+  factor_model:
+    use_factor_model: true
+    equity_factors: ["MARKET", "SIZE", "VALUE", "MOMENTUM", "QUALITY"]
+    fixed_income_factors: ["LEVEL", "SLOPE", "CURVATURE", "CREDIT"]
+    max_factor_loading: 5.0
+
+# Greeks Calculation Settings
+greeks_calculation:
+  # Black-Scholes Settings
+  black_scholes:
+    default_risk_free_rate: 0.05
+    default_dividend_yield: 0.02
+    volatility_floor: 0.01
+    volatility_ceiling: 5.0
+    time_to_expiry_floor: 0.0027  # 1 day
+
+  # Binomial Tree Settings
+  binomial_tree:
+    default_steps: 100
+    max_steps: 1000
+    use_richardson_extrapolation: true
+
+  # Finite Difference Settings
+  finite_difference:
+    spot_steps: 100
+    time_steps: 100
+    scheme: "crank_nicolson"  # explicit, implicit, crank_nicolson
+
+  # Volatility Surface
+  volatility_surface:
+    interpolation_method: "cubic_spline"  # linear, cubic_spline, rbf
+    extrapolation_method: "flat"  # flat, linear
+    arbitrage_check: true
+
+# Portfolio Optimization Settings
+portfolio_optimization:
+  # Mean-Variance Settings
+  mean_variance:
+    default_risk_aversion: 1.0
+    use_shrinkage: true
+    shrinkage_factor: 0.1
+    max_iterations: 1000
+    tolerance: 1e-8
+
+  # Risk Parity Settings
+  risk_parity:
+    max_iterations: 1000
+    tolerance: 1e-8
+    regularization: 1e-6
+
+  # Black-Litterman Settings
+  black_litterman:
+    tau: 0.025
+    default_risk_aversion: 3.0
+    max_views: 20
+
+  # Constraints
+  constraints:
+    leverage_limit: 1.0
+    turnover_limit: 0.5
+    min_weight: 0.0
+    max_weight: 0.4
+    no_short_selling: true
+
+# Stress Testing Settings
+stress_testing:
+  # Historical Scenarios
+  historical_scenarios:
+    enabled_scenarios:
+      - "black_monday_1987"
+      - "dot_com_crash_2000"
+      - "lehman_crisis_2008"
+      - "covid_crash_2020"
+      - "flash_crash_2010"
+
+  # Monte Carlo Stress
+  monte_carlo_stress:
+    num_simulations: 10000
+    confidence_levels: [0.95, 0.99, 0.995]
+    correlation_breakdown_factor: 0.5
+
+  # Factor Stress
+  factor_stress:
+    equity_shock_levels: [-0.1, -0.2, -0.3, -0.5]
+    rates_shock_levels: [0.01, 0.02, 0.05]
+    credit_shock_levels: [0.001, 0.005, 0.01]
+    vol_shock_levels: [1.5, 2.0, 3.0]
+
+  # Reverse Stress Testing
+  reverse_stress:
+    target_loss_levels: [-0.05, -0.1, -0.15, -0.2]  # As fraction of portfolio value
+    max_shock_magnitude: 0.5
+    optimization_iterations: 1000
+
+# Risk Limits and Monitoring
+risk_limits:
+  # VaR Limits
+  var_limits:
+    var_1d_limit_pct: 0.02  # 2% of portfolio value
+    var_10d_limit_pct: 0.06  # 6% of portfolio value
+    expected_shortfall_limit_pct: 0.03  # 3% of portfolio value
+
+  # Position Limits
+  position_limits:
+    max_position_concentration: 0.1  # 10% max in any single position
+    max_sector_concentration: 0.3    # 30% max in any sector
+    max_country_concentration: 0.5   # 50% max in any country
+    max_currency_exposure: 0.2       # 20% max currency exposure
+
+  # Greeks Limits
+  greeks_limits:
+    max_portfolio_delta: 100000
+    max_portfolio_gamma: 10000
+    max_daily_theta: -5000
+    max_portfolio_vega: 50000
+
+  # Leverage and Exposure
+  leverage_limits:
+    max_gross_leverage: 2.0
+    max_net_leverage: 1.5
+    max_leverage_ratio: 3.0
+
+# Performance and Monitoring
+performance:
+  # Computation Targets
+  computation_targets:
+    max_var_calculation_time_ms: 10
+    max_greeks_calculation_time_ms: 5
+    max_optimization_time_s: 30
+    max_stress_test_time_s: 60
+
+  # Monitoring
+  monitoring:
+    enable_real_time_monitoring: true
+    monitoring_frequency_ms: 1000
+    alert_latency_threshold_ms: 100
+    enable_performance_logging: true
+
+  # Caching
+  caching:
+    enable_result_caching: true
+    cache_ttl_seconds: 300
+    max_cache_size_mb: 1024
+
+# Data Sources and Feeds
+data_sources:
+  # Market Data
+  market_data:
+    primary_feed: "bloomberg"
+    backup_feeds: ["refinitiv", "iex"]
+    update_frequency_ms: 100
+    price_tolerance: 0.001
+    stale_data_threshold_s: 30
+
+  # Reference Data
+  reference_data:
+    instrument_master: "bloomberg"
+    corporate_actions: "refinitiv"
+    earnings_calendar: "factset"
+
+  # Historical Data
+  historical_data:
+    provider: "quandl"
+    lookback_years: 10
+    update_frequency: "daily"
+    data_quality_checks: true
+
+# Database Configuration
+database:
+  # Time Series Database
+  timeseries:
+    type: "clickhouse"
+    host: "localhost"
+    port: 8123
+    database: "risk_analytics"
+    username: "default"
+    password: ""
+    connection_pool_size: 10
+
+  # Cache Database
+  cache:
+    type: "redis"
+    host: "localhost"
+    port: 6379
+    database: 0
+    password: ""
+    connection_pool_size: 20
+
+  # OLTP Database
+  oltp:
+    type: "postgresql"
+    host: "localhost"
+    port: 5432
+    database: "risk_analytics"
+    username: "risk_user"
+    password: "risk_password"
+    connection_pool_size: 20
+
+# Web API Configuration
+web_api:
+  # Server Settings
+  server:
+    host: "0.0.0.0"
+    port: 8000
+    workers: 4
+    max_connections: 1000
+    keepalive_timeout: 65
+
+  # Security
+  security:
+    enable_https: false
+    ssl_cert_file: ""
+    ssl_key_file: ""
+    cors_origins: ["*"]
+    api_key_required: false
+
+  # Rate Limiting
+  rate_limiting:
+    enable: true
+    requests_per_minute: 1000
+    burst_size: 100
+
+  # WebSocket
+  websocket:
+    enable: true
+    max_connections: 500
+    heartbeat_interval_s: 30
+
+# Logging Configuration
+logging:
+  # Log Levels
+  levels:
+    root: "INFO"
+    risk_engine: "DEBUG"
+    position_engine: "INFO"
+    web_api: "INFO"
+
+  # Log Files
+  files:
+    application_log: "logs/risk_engine.log"
+    performance_log: "logs/performance.log"
+    trade_log: "logs/trades.log"
+    error_log: "logs/errors.log"
+
+  # Log Rotation
+  rotation:
+    max_file_size_mb: 100
+    backup_count: 10
+    rotate_daily: true
+
+# Environment-Specific Overrides
+environments:
+  development:
+    risk_calculation:
+      monte_carlo:
+        default_scenarios: 1000
+    logging:
+      levels:
+        root: "DEBUG"
+
+  testing:
+    risk_calculation:
+      monte_carlo:
+        default_scenarios: 100
+    data_sources:
+      market_data:
+        primary_feed: "simulation"
+
+  production:
+    performance:
+      computation_targets:
+        max_var_calculation_time_ms: 5
+    security:
+      api_key_required: true
+    logging:
+      levels:
+        root: "WARNING"
