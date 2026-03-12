@@ -17,37 +17,37 @@ Production-grade risk analytics system designed for high-frequency trading envir
 #### 1. High-Performance Data Layer
 ```
 ├── Position Engine (C++)
-│   ├── Lock-free position aggregation
-│   ├── Memory-mapped files for persistence
-│   └── NUMA-aware data structures
+│ ├── Lock-free position aggregation
+│ ├── Memory-mapped files for persistence
+│ └── NUMA-aware data structures
 ├── Market Data Engine (C++)
-│   ├── Low-latency market feed processing
-│   ├── Price interpolation and smoothing
-│   └── Historical data management
+│ ├── Low-latency market feed processing
+│ ├── Price interpolation and smoothing
+│ └── Historical data management
 └── Risk Data Store (Redis/ClickHouse)
-    ├── Real-time risk metrics cache
-    ├── Historical scenarios storage
-    └── Regulatory reporting data
+ ├── Real-time risk metrics cache
+ ├── Historical scenarios storage
+ └── Regulatory reporting data
 ```
 
 #### 2. Risk Calculation Engine
 ```
 ├── Monte Carlo Engine (C++/CUDA)
-│   ├── GPU-accelerated simulations
-│   ├── Quasi-random number generation
-│   └── Parallel scenario processing
+│ ├── GPU-accelerated simulations
+│ ├── Quasi-random number generation
+│ └── Parallel scenario processing
 ├── Greeks Calculator (C++)
-│   ├── Black-Scholes analytical solutions
-│   ├── Binomial/trinomial trees
-│   └── Finite difference methods
+│ ├── Black-Scholes analytical solutions
+│ ├── Binomial/trinomial trees
+│ └── Finite difference methods
 ├── VaR/ES Calculator (Python/NumPy)
-│   ├── Historical simulation
-│   ├── Parametric VaR
-│   └── Expected shortfall
+│ ├── Historical simulation
+│ ├── Parametric VaR
+│ └── Expected shortfall
 └── Stress Testing Engine (Python)
-    ├── Historical scenario replay
-    ├── Custom shock scenarios
-    └── Factor-based stress tests
+ ├── Historical scenario replay
+ ├── Custom shock scenarios
+ └── Factor-based stress tests
 ```
 
 #### 3. Portfolio Optimization
@@ -61,49 +61,49 @@ Production-grade risk analytics system designed for high-frequency trading envir
 #### 4. Real-Time Processing Layer
 ```
 ├── Position Aggregator (C++)
-│   ├── Real-time P&L calculation
-│   ├── Position netting and aggregation
-│   └── Currency conversion
+│ ├── Real-time P&L calculation
+│ ├── Position netting and aggregation
+│ └── Currency conversion
 ├── Risk Monitor (Python/asyncio)
-│   ├── Continuous risk metric updates
-│   ├── Limit monitoring
-│   └── Alert generation
+│ ├── Continuous risk metric updates
+│ ├── Limit monitoring
+│ └── Alert generation
 └── Market Data Processor (C++)
-    ├── Feed normalization
-    ├── Price validation
-    └── Gap detection
+ ├── Feed normalization
+ ├── Price validation
+ └── Gap detection
 ```
 
 #### 5. Web Dashboard & API
 ```
 ├── FastAPI Backend (Python)
-│   ├── RESTful risk metrics API
-│   ├── WebSocket real-time updates
-│   └── Authentication/authorization
+│ ├── RESTful risk metrics API
+│ ├── WebSocket real-time updates
+│ └── Authentication/authorization
 ├── React Frontend (TypeScript)
-│   ├── Real-time risk dashboards
-│   ├── Interactive charting (D3.js)
-│   └── Scenario analysis tools
+│ ├── Real-time risk dashboards
+│ ├── Interactive charting (D3.js)
+│ └── Scenario analysis tools
 └── Redis Cache Layer
-    ├── Session management
-    ├── Real-time data caching
-    └── Rate limiting
+ ├── Session management
+ ├── Real-time data caching
+ └── Rate limiting
 ```
 
 #### 6. Compliance & Reporting
 ```
 ├── Regulatory Calculator (Python)
-│   ├── Basel III calculations
-│   ├── FRTB standardized approach
-│   └── SIMM margin calculations
+│ ├── Basel III calculations
+│ ├── FRTB standardized approach
+│ └── SIMM margin calculations
 ├── Report Generator (Python/Jinja2)
-│   ├── Daily risk reports
-│   ├── Regulatory submissions
-│   └── Executive summaries
+│ ├── Daily risk reports
+│ ├── Regulatory submissions
+│ └── Executive summaries
 └── Audit Trail (PostgreSQL)
-    ├── Position change tracking
-    ├── Risk calculation history
-    └── User action logging
+ ├── Position change tracking
+ ├── Risk calculation history
+ └── User action logging
 ```
 
 ## Data Flow Architecture
@@ -111,9 +111,9 @@ Production-grade risk analytics system designed for high-frequency trading envir
 ### Real-Time Processing Pipeline
 ```
 Market Data → Position Engine → Risk Calculator → Dashboard
-     ↓             ↓              ↓              ↓
+ ↓ ↓ ↓ ↓
  Price Cache → P&L Engine → Risk Metrics → Alerts
-     ↓             ↓              ↓              ↓
+ ↓ ↓ ↓ ↓
 Historical DB → Compliance → Reports → Notifications
 ```
 

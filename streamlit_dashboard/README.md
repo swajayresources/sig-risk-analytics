@@ -248,7 +248,7 @@ GRANT ALL PRIVILEGES ON DATABASE risk_dashboard TO risk_user;
 
 ### Build Docker Image
 ```bash
-docker build -t risk-dashboard .
+docker build -t risk-dashboard.
 ```
 
 ### Run with Docker Compose
@@ -266,22 +266,22 @@ This will start:
 ### Common Issues
 
 1. **Port Already in Use**
-   ```bash
-   python run_dashboard.py --port 8502
-   ```
+ ```bash
+ python run_dashboard.py --port 8502
+ ```
 
 2. **Missing Dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
+ ```bash
+ pip install -r requirements.txt
+ ```
 
 3. **Redis Connection Failed**
-   - Dashboard will work with simulated data if Redis is unavailable
-   - Install and start Redis service for real-time features
+ - Dashboard will work with simulated data if Redis is unavailable
+ - Install and start Redis service for real-time features
 
 4. **Data Loading Issues**
-   - Check internet connection for Yahoo Finance data
-   - Dashboard includes fallback simulated data
+ - Check internet connection for Yahoo Finance data
+ - Dashboard includes fallback simulated data
 
 ### Debug Mode
 Enable debug mode for detailed logging:

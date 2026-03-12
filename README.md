@@ -1,6 +1,6 @@
-# SIG Risk Analytics Engine
+# Risk Analytics Engine
 
-Production-grade quantitative risk analytics platform built for the SIG internship application. Real-time portfolio risk monitoring with VaR, Greeks, Monte Carlo simulations, and stress testing.
+Production-grade quantitative risk analytics platform built. Real-time portfolio risk monitoring with VaR, Greeks, Monte Carlo simulations, and stress testing.
 
 ## What It Does
 
@@ -57,15 +57,15 @@ streamlit run main_dashboard.py
 ```
 SIG2/
 ├── streamlit_dashboard/
-│   ├── main_dashboard.py          # Entry point — run this
-│   ├── src/
-│   │   ├── risk_engine.py         # VaR, Greeks, Monte Carlo
-│   │   ├── data_provider.py       # Market data feeds
-│   │   ├── visualization_engine.py
-│   │   ├── alert_manager.py
-│   │   ├── export_manager.py
-│   │   └── auth_manager.py
-│   └── requirements.txt
-├── web/                           # React frontend (optional)
-└── src/                           # C++ engine (optional)
+│ ├── main_dashboard.py # Entry point — run this
+│ ├── src/
+│ │ ├── risk_engine.py # VaR, Greeks, Monte Carlo
+│ │ ├── data_provider.py # Market data feeds
+│ │ ├── visualization_engine.py
+│ │ ├── alert_manager.py
+│ │ ├── export_manager.py
+│ │ └── auth_manager.py
+│ └── requirements.txt
+├── web/ # React frontend (optional)
+└── src/ # C++ engine (optional)
 ```

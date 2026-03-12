@@ -58,39 +58,39 @@ Financial institutions require sophisticated risk management systems to:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                   Streamlit Frontend                    │
+│ Streamlit Frontend │
 ├─────────────────────────────────────────────────────────┤
-│                Authentication Layer                     │
+│ Authentication Layer │
 ├─────────────────────────────────────────────────────────┤
-│  Business Logic Layer (Risk Engine, Compliance, etc.)  │
+│ Business Logic Layer (Risk Engine, Compliance, etc.) │
 ├─────────────────────────────────────────────────────────┤
-│              Data Processing Layer                      │
+│ Data Processing Layer │
 ├─────────────────────────────────────────────────────────┤
-│          Data Sources (APIs, Simulated, Cache)         │
+│ Data Sources (APIs, Simulated, Cache) │
 └─────────────────────────────────────────────────────────┘
 ```
 
 ### Core Modules Architecture
 
 1. **main_dashboard.py** (Entry Point & Orchestration)
-   - Application bootstrapping and routing
-   - Session state management
-   - Page rendering coordination
+ - Application bootstrapping and routing
+ - Session state management
+ - Page rendering coordination
 
 2. **src/risk_engine.py** (Risk Calculations Core)
-   - VaR calculations (Historical, Parametric, Monte Carlo)
-   - Greeks calculations for derivatives
-   - Portfolio risk metrics aggregation
+ - VaR calculations (Historical, Parametric, Monte Carlo)
+ - Greeks calculations for derivatives
+ - Portfolio risk metrics aggregation
 
 3. **src/regulatory_compliance.py** (Compliance Framework)
-   - Basel III validation engine
-   - FRTB compliance monitoring
-   - Regulatory reporting and audit trails
+ - Basel III validation engine
+ - FRTB compliance monitoring
+ - Regulatory reporting and audit trails
 
 4. **src/model_validation.py** (Model Validation Framework)
-   - Backtesting implementation (Kupiec, Christoffersen tests)
-   - Model accuracy validation
-   - Statistical significance testing
+ - Backtesting implementation (Kupiec, Christoffersen tests)
+ - Model accuracy validation
+ - Statistical significance testing
 
 ### Design Patterns Implemented
 
@@ -117,12 +117,12 @@ Financial institutions require sophisticated risk management systems to:
 ```python
 # Real-time metric calculation
 def get_current_risk_metrics(self) -> Dict:
-    np.random.seed(int(time.time()) % 1000)  # Pseudo-random for demo
-    return {
-        'portfolio_value': 2500 + np.random.normal(0, 50),
-        'var_1d': 15.5 + np.random.normal(0, 2),
-        'expected_shortfall': 22.3 + np.random.normal(0, 3)
-    }
+ np.random.seed(int(time.time()) % 1000) # Pseudo-random for demo
+ return {
+ 'portfolio_value': 2500 + np.random.normal(0, 50),
+ 'var_1d': 15.5 + np.random.normal(0, 2),
+ 'expected_shortfall': 22.3 + np.random.normal(0, 3)
+ }
 ```
 
 **Business Value**: Provides C-suite executives real-time view of portfolio health
@@ -133,53 +133,53 @@ def get_current_risk_metrics(self) -> Dict:
 **Implemented Methods**:
 
 1. **Historical Simulation VaR**
-   - Uses actual historical returns
-   - Non-parametric approach
-   - Confidence levels: 95%, 99%, 99.9%
+ - Uses actual historical returns
+ - Non-parametric approach
+ - Confidence levels: 95%, 99%, 99.9%
 
 2. **Parametric VaR (Normal Distribution)**
-   - Assumes normal distribution of returns
-   - Faster calculation for large portfolios
-   - Formula: `VaR = μ + σ * Φ⁻¹(α) * √t`
+ - Assumes normal distribution of returns
+ - Faster calculation for large portfolios
+ - Formula: `VaR = μ + σ * Φ⁻¹(α) * √t`
 
 3. **Parametric VaR (Student's t-Distribution)**
-   - Accounts for fat tails in return distributions
-   - Better for crisis scenarios
-   - Degrees of freedom estimation via MLE
+ - Accounts for fat tails in return distributions
+ - Better for crisis scenarios
+ - Degrees of freedom estimation via MLE
 
 4. **Monte Carlo VaR**
-   - Full portfolio revaluation
-   - Path-dependent instruments support
-   - 10,000+ simulations for accuracy
+ - Full portfolio revaluation
+ - Path-dependent instruments support
+ - 10,000+ simulations for accuracy
 
 **Technical Deep Dive**:
 ```python
 def calculate_var_monte_carlo(self, positions: List[Position],
-                             confidence_level: float = 0.95,
-                             num_simulations: int = 10000) -> Dict[str, float]:
-    """
-    Monte Carlo VaR using Cholesky decomposition for correlation
-    """
-    # Generate correlated random variables
-    correlation_matrix = self.get_correlation_matrix()
-    L = np.linalg.cholesky(correlation_matrix)
+ confidence_level: float = 0.95,
+ num_simulations: int = 10000) -> Dict[str, float]:
+ """
+ Monte Carlo VaR using Cholesky decomposition for correlation
+ """
+ # Generate correlated random variables
+ correlation_matrix = self.get_correlation_matrix()
+ L = np.linalg.cholesky(correlation_matrix)
 
-    # Simulate portfolio returns
-    portfolio_returns = []
-    for i in range(num_simulations):
-        random_shocks = np.random.standard_normal(len(positions))
-        correlated_shocks = L @ random_shocks
+ # Simulate portfolio returns
+ portfolio_returns = []
+ for i in range(num_simulations):
+ random_shocks = np.random.standard_normal(len(positions))
+ correlated_shocks = L @ random_shocks
 
-        portfolio_return = sum(
-            pos.weight * pos.expected_return +
-            pos.weight * pos.volatility * shock
-            for pos, shock in zip(positions, correlated_shocks)
-        )
-        portfolio_returns.append(portfolio_return)
+ portfolio_return = sum(
+ pos.weight * pos.expected_return +
+ pos.weight * pos.volatility * shock
+ for pos, shock in zip(positions, correlated_shocks)
+ )
+ portfolio_returns.append(portfolio_return)
 
-    # Calculate VaR
-    var_level = np.percentile(portfolio_returns, (1 - confidence_level) * 100)
-    return {'var': -var_level, 'confidence_level': confidence_level}
+ # Calculate VaR
+ var_level = np.percentile(portfolio_returns, (1 - confidence_level) * 100)
+ return {'var': -var_level, 'confidence_level': confidence_level}
 ```
 
 **Why These Methods**: Industry standard approaches covering different market assumptions and computational requirements.
@@ -197,23 +197,23 @@ def calculate_var_monte_carlo(self, positions: List[Position],
 **Technical Implementation**:
 ```python
 def apply_stress_scenario(self, scenario: StressScenario,
-                         positions: List[Position]) -> Dict[str, float]:
-    """
-    Apply stress scenario using Taylor expansion approximation
-    """
-    total_pnl = 0
+ positions: List[Position]) -> Dict[str, float]:
+ """
+ Apply stress scenario using Taylor expansion approximation
+ """
+ total_pnl = 0
 
-    for position in positions:
-        if scenario.equity_shock and position.asset_class == 'Equity':
-            # First-order effect (Delta)
-            delta_pnl = position.delta * scenario.equity_shock * position.market_value
+ for position in positions:
+ if scenario.equity_shock and position.asset_class == 'Equity':
+ # First-order effect (Delta)
+ delta_pnl = position.delta * scenario.equity_shock * position.market_value
 
-            # Second-order effect (Gamma)
-            gamma_pnl = 0.5 * position.gamma * (scenario.equity_shock ** 2) * position.market_value
+ # Second-order effect (Gamma)
+ gamma_pnl = 0.5 * position.gamma * (scenario.equity_shock ** 2) * position.market_value
 
-            total_pnl += delta_pnl + gamma_pnl
+ total_pnl += delta_pnl + gamma_pnl
 
-    return {'total_pnl': total_pnl, 'scenario': scenario.name}
+ return {'total_pnl': total_pnl, 'scenario': scenario.name}
 ```
 
 **Business Value**: Regulatory requirement for CCAR and internal risk management
@@ -231,32 +231,32 @@ def apply_stress_scenario(self, scenario: StressScenario,
 **Calculation Methods**:
 ```python
 def calculate_option_greeks(self, option: OptionPosition) -> GreeksResult:
-    """
-    Black-Scholes Greeks calculation
-    """
-    S = option.underlying_price
-    K = option.strike_price
-    T = option.time_to_expiry
-    r = option.risk_free_rate
-    sigma = option.implied_volatility
+ """
+ Black-Scholes Greeks calculation
+ """
+ S = option.underlying_price
+ K = option.strike_price
+ T = option.time_to_expiry
+ r = option.risk_free_rate
+ sigma = option.implied_volatility
 
-    d1 = (np.log(S/K) + (r + 0.5*sigma**2)*T) / (sigma*np.sqrt(T))
-    d2 = d1 - sigma*np.sqrt(T)
+ d1 = (np.log(S/K) + (r + 0.5*sigma**2)*T) / (sigma*np.sqrt(T))
+ d2 = d1 - sigma*np.sqrt(T)
 
-    if option.option_type == 'call':
-        delta = norm.cdf(d1)
-        theta = (-S*norm.pdf(d1)*sigma/(2*np.sqrt(T)) -
-                r*K*np.exp(-r*T)*norm.cdf(d2))
-    else:  # put
-        delta = norm.cdf(d1) - 1
-        theta = (-S*norm.pdf(d1)*sigma/(2*np.sqrt(T)) +
-                r*K*np.exp(-r*T)*norm.cdf(-d2))
+ if option.option_type == 'call':
+ delta = norm.cdf(d1)
+ theta = (-S*norm.pdf(d1)*sigma/(2*np.sqrt(T)) -
+ r*K*np.exp(-r*T)*norm.cdf(d2))
+ else: # put
+ delta = norm.cdf(d1) - 1
+ theta = (-S*norm.pdf(d1)*sigma/(2*np.sqrt(T)) +
+ r*K*np.exp(-r*T)*norm.cdf(-d2))
 
-    gamma = norm.pdf(d1) / (S*sigma*np.sqrt(T))
-    vega = S*norm.pdf(d1)*np.sqrt(T) / 100
-    rho = K*T*np.exp(-r*T)*norm.cdf(d2 if option.option_type=='call' else -d2) / 100
+ gamma = norm.pdf(d1) / (S*sigma*np.sqrt(T))
+ vega = S*norm.pdf(d1)*np.sqrt(T) / 100
+ rho = K*T*np.exp(-r*T)*norm.cdf(d2 if option.option_type=='call' else -d2) / 100
 
-    return GreeksResult(delta=delta, gamma=gamma, theta=theta, vega=vega, rho=rho)
+ return GreeksResult(delta=delta, gamma=gamma, theta=theta, vega=vega, rho=rho)
 ```
 
 **Business Value**: Essential for options market makers and hedge funds
@@ -274,23 +274,23 @@ def calculate_option_greeks(self, option: OptionPosition) -> GreeksResult:
 **Alert System Architecture**:
 ```python
 class AlertManager:
-    def __init__(self):
-        self.alert_rules = self.load_alert_rules()
-        self.notification_channels = ['email', 'dashboard', 'sms']
+ def __init__(self):
+ self.alert_rules = self.load_alert_rules()
+ self.notification_channels = ['email', 'dashboard', 'sms']
 
-    def check_risk_limits(self, portfolio_metrics: Dict) -> List[Alert]:
-        alerts = []
-        for rule in self.alert_rules:
-            if self.evaluate_rule(rule, portfolio_metrics):
-                alert = Alert(
-                    level=rule.severity,
-                    message=rule.message,
-                    timestamp=datetime.now(),
-                    metric_value=portfolio_metrics[rule.metric],
-                    threshold=rule.threshold
-                )
-                alerts.append(alert)
-        return alerts
+ def check_risk_limits(self, portfolio_metrics: Dict) -> List[Alert]:
+ alerts = []
+ for rule in self.alert_rules:
+ if self.evaluate_rule(rule, portfolio_metrics):
+ alert = Alert(
+ level=rule.severity,
+ message=rule.message,
+ timestamp=datetime.now(),
+ metric_value=portfolio_metrics[rule.metric],
+ threshold=rule.threshold
+ )
+ alerts.append(alert)
+ return alerts
 ```
 
 **Business Value**: Prevents regulatory breaches and large losses through proactive monitoring
@@ -348,12 +348,12 @@ class AlertManager:
 #### Capital Adequacy Framework
 ```python
 class BaselIIIValidator:
-    def __init__(self):
-        self.min_tier1_ratio = 0.06      # 6% Tier 1 Capital Ratio
-        self.min_total_capital_ratio = 0.08  # 8% Total Capital Ratio
-        self.min_leverage_ratio = 0.03   # 3% Leverage Ratio
-        self.min_lcr = 1.0              # 100% Liquidity Coverage Ratio
-        self.min_nsfr = 1.0             # 100% Net Stable Funding Ratio
+ def __init__(self):
+ self.min_tier1_ratio = 0.06 # 6% Tier 1 Capital Ratio
+ self.min_total_capital_ratio = 0.08 # 8% Total Capital Ratio
+ self.min_leverage_ratio = 0.03 # 3% Leverage Ratio
+ self.min_lcr = 1.0 # 100% Liquidity Coverage Ratio
+ self.min_nsfr = 1.0 # 100% Net Stable Funding Ratio
 ```
 
 **Implemented Ratios**:
@@ -369,17 +369,17 @@ class BaselIIIValidator:
 #### Risk-Weighted Assets Calculation
 ```python
 def calculate_rwa(self, exposures: List[Exposure]) -> float:
-    """
-    Calculate Risk-Weighted Assets using Basel III standardized approach
-    """
-    total_rwa = 0
-    for exposure in exposures:
-        risk_weight = self.get_risk_weight(exposure.counterparty_rating,
-                                         exposure.asset_class)
-        exposure_value = exposure.amount * self.get_ccf(exposure.commitment_type)
-        rwa = exposure_value * risk_weight
-        total_rwa += rwa
-    return total_rwa
+ """
+ Calculate Risk-Weighted Assets using Basel III standardized approach
+ """
+ total_rwa = 0
+ for exposure in exposures:
+ risk_weight = self.get_risk_weight(exposure.counterparty_rating,
+ exposure.asset_class)
+ exposure_value = exposure.amount * self.get_ccf(exposure.commitment_type)
+ rwa = exposure_value * risk_weight
+ total_rwa += rwa
+ return total_rwa
 ```
 
 ### FRTB (Fundamental Review of the Trading Book)
@@ -393,14 +393,14 @@ def calculate_rwa(self, exposures: List[Exposure]) -> float:
 **Implementation**:
 ```python
 def calculate_sba_capital(self, sensitivities: Dict) -> float:
-    """
-    Calculate SBA capital charge using correlation matrix
-    """
-    delta_charge = self.calculate_delta_charge(sensitivities['delta'])
-    vega_charge = self.calculate_vega_charge(sensitivities['vega'])
-    curvature_charge = self.calculate_curvature_charge(sensitivities['curvature'])
+ """
+ Calculate SBA capital charge using correlation matrix
+ """
+ delta_charge = self.calculate_delta_charge(sensitivities['delta'])
+ vega_charge = self.calculate_vega_charge(sensitivities['vega'])
+ curvature_charge = self.calculate_curvature_charge(sensitivities['curvature'])
 
-    return delta_charge + vega_charge + curvature_charge
+ return delta_charge + vega_charge + curvature_charge
 ```
 
 #### Internal Models Approach (IMA)
@@ -463,19 +463,19 @@ def calculate_sba_capital(self, sensitivities: Dict) -> float:
 **Security Implementation**:
 ```python
 class AuthManager:
-    def authenticate_user(self, username: str, password: str) -> Optional[str]:
-        """
-        Authenticate user and return JWT token
-        """
-        user = self.get_user(username)
-        if user and bcrypt.checkpw(password.encode(), user.password_hash):
-            token = jwt.encode({
-                'user_id': user.id,
-                'username': username,
-                'exp': datetime.utcnow() + timedelta(hours=24)
-            }, self.secret_key, algorithm='HS256')
-            return token
-        return None
+ def authenticate_user(self, username: str, password: str) -> Optional[str]:
+ """
+ Authenticate user and return JWT token
+ """
+ user = self.get_user(username)
+ if user and bcrypt.checkpw(password.encode(), user.password_hash):
+ token = jwt.encode({
+ 'user_id': user.id,
+ 'username': username,
+ 'exp': datetime.utcnow() + timedelta(hours=24)
+ }, self.secret_key, algorithm='HS256')
+ return token
+ return None
 ```
 
 ---
@@ -485,10 +485,10 @@ class AuthManager:
 ### Real-time Data Pipeline
 ```
 Market Data APIs → Data Normalization → Risk Calculations → Dashboard Updates
-     ↓                    ↓                     ↓              ↓
-  yfinance           pandas DataFrames    NumPy Arrays    Streamlit State
-  Alpha Vantage      Data Validation     Vectorized Ops   Auto-refresh
-  Simulated Data     Missing Value Fill   Parallel Proc.   WebSocket Updates
+ ↓ ↓ ↓ ↓
+ yfinance pandas DataFrames NumPy Arrays Streamlit State
+ Alpha Vantage Data Validation Vectorized Ops Auto-refresh
+ Simulated Data Missing Value Fill Parallel Proc. WebSocket Updates
 ```
 
 ### Data Quality Framework
@@ -500,24 +500,24 @@ Market Data APIs → Data Normalization → Risk Calculations → Dashboard Upda
 
 ```python
 class DataQualityValidator:
-    def validate_time_series(self, data: pd.DataFrame) -> ValidationReport:
-        """
-        Comprehensive time series validation
-        """
-        results = []
+ def validate_time_series(self, data: pd.DataFrame) -> ValidationReport:
+ """
+ Comprehensive time series validation
+ """
+ results = []
 
-        # Missing value analysis
-        missing_pct = data.isnull().sum() / len(data)
-        results.append(self.check_missing_values(missing_pct))
+ # Missing value analysis
+ missing_pct = data.isnull().sum() / len(data)
+ results.append(self.check_missing_values(missing_pct))
 
-        # Outlier detection using IQR method
-        Q1 = data.quantile(0.25)
-        Q3 = data.quantile(0.75)
-        IQR = Q3 - Q1
-        outliers = ((data < (Q1 - 1.5 * IQR)) | (data > (Q3 + 1.5 * IQR))).sum()
-        results.append(self.check_outliers(outliers))
+ # Outlier detection using IQR method
+ Q1 = data.quantile(0.25)
+ Q3 = data.quantile(0.75)
+ IQR = Q3 - Q1
+ outliers = ((data < (Q1 - 1.5 * IQR)) | (data > (Q3 + 1.5 * IQR))).sum()
+ results.append(self.check_outliers(outliers))
 
-        return ValidationReport(results)
+ return ValidationReport(results)
 ```
 
 ### Performance Optimization Strategies
@@ -542,60 +542,60 @@ class DataQualityValidator:
 **Example Test Case**:
 ```python
 class TestVaRCalculations(unittest.TestCase):
-    def test_historical_var_accuracy(self):
-        """Test Historical VaR against known benchmarks"""
-        # Generate test portfolio with known characteristics
-        returns = np.random.normal(0, 0.02, 252)  # 2% daily volatility
-        portfolio_value = 1000000
+ def test_historical_var_accuracy(self):
+ """Test Historical VaR against known benchmarks"""
+ # Generate test portfolio with known characteristics
+ returns = np.random.normal(0, 0.02, 252) # 2% daily volatility
+ portfolio_value = 1000000
 
-        # Calculate VaR
-        var_95 = self.risk_engine.calculate_historical_var(
-            returns, portfolio_value, confidence_level=0.95
-        )
+ # Calculate VaR
+ var_95 = self.risk_engine.calculate_historical_var(
+ returns, portfolio_value, confidence_level=0.95
+ )
 
-        # Theoretical VaR for normal distribution
-        expected_var = portfolio_value * 0.02 * 1.645  # 95% normal quantile
+ # Theoretical VaR for normal distribution
+ expected_var = portfolio_value * 0.02 * 1.645 # 95% normal quantile
 
-        # Allow 10% tolerance for empirical vs theoretical
-        self.assertAlmostEqual(var_95, expected_var, delta=expected_var * 0.1)
+ # Allow 10% tolerance for empirical vs theoretical
+ self.assertAlmostEqual(var_95, expected_var, delta=expected_var * 0.1)
 ```
 
 ### Model Validation Framework
 **Backtesting Implementation**:
 
 1. **Kupiec Proportion of Failures Test**:
-   - H₀: VaR model is correctly calibrated
-   - Test statistic: `LR = -2 × ln[(1-p)^(T-N) × p^N] + 2 × ln[(1-N/T)^(T-N) × (N/T)^N]`
-   - Critical value: χ²(1, 0.05) = 3.84
+ - H₀: VaR model is correctly calibrated
+ - Test statistic: `LR = -2 × ln[(1-p)^(T-N) × p^N] + 2 × ln[(1-N/T)^(T-N) × (N/T)^N]`
+ - Critical value: χ²(1, 0.05) = 3.84
 
 2. **Christoffersen Independence Test**:
-   - Tests for clustering of VaR violations
-   - Examines first-order Markov chain properties
+ - Tests for clustering of VaR violations
+ - Examines first-order Markov chain properties
 
 ```python
 def kupiec_test(self, violations: np.array, confidence_level: float) -> Dict:
-    """
-    Perform Kupiec Proportion of Failures test
-    """
-    T = len(violations)
-    N = np.sum(violations)
-    p = 1 - confidence_level
+ """
+ Perform Kupiec Proportion of Failures test
+ """
+ T = len(violations)
+ N = np.sum(violations)
+ p = 1 - confidence_level
 
-    if N == 0 or N == T:
-        return {'test_statistic': 0, 'p_value': 1, 'reject_null': False}
+ if N == 0 or N == T:
+ return {'test_statistic': 0, 'p_value': 1, 'reject_null': False}
 
-    lr_stat = -2 * (T - N) * np.log(1 - p) - 2 * N * np.log(p) + \
-              2 * (T - N) * np.log(1 - N/T) + 2 * N * np.log(N/T)
+ lr_stat = -2 * (T - N) * np.log(1 - p) - 2 * N * np.log(p) + \
+ 2 * (T - N) * np.log(1 - N/T) + 2 * N * np.log(N/T)
 
-    p_value = 1 - chi2.cdf(lr_stat, df=1)
-    reject_null = p_value < 0.05
+ p_value = 1 - chi2.cdf(lr_stat, df=1)
+ reject_null = p_value < 0.05
 
-    return {
-        'test_statistic': lr_stat,
-        'p_value': p_value,
-        'reject_null': reject_null,
-        'interpretation': 'Model rejected' if reject_null else 'Model acceptable'
-    }
+ return {
+ 'test_statistic': lr_stat,
+ 'p_value': p_value,
+ 'reject_null': reject_null,
+ 'interpretation': 'Model rejected' if reject_null else 'Model acceptable'
+ }
 ```
 
 ### Integration Testing
@@ -613,24 +613,24 @@ def kupiec_test(self, violations: np.array, confidence_level: float) -> Dict:
 ```python
 @lru_cache(maxsize=128)
 def get_correlation_matrix(self, asset_classes: tuple) -> np.ndarray:
-    """
-    Cached correlation matrix computation
-    """
-    # Expensive correlation calculation cached for reuse
-    return correlation_matrix
+ """
+ Cached correlation matrix computation
+ """
+ # Expensive correlation calculation cached for reuse
+ return correlation_matrix
 
 def parallel_monte_carlo(self, num_simulations: int) -> List[float]:
-    """
-    Parallel Monte Carlo using multiprocessing
-    """
-    num_processes = multiprocessing.cpu_count()
-    chunk_size = num_simulations // num_processes
+ """
+ Parallel Monte Carlo using multiprocessing
+ """
+ num_processes = multiprocessing.cpu_count()
+ chunk_size = num_simulations // num_processes
 
-    with multiprocessing.Pool(processes=num_processes) as pool:
-        results = pool.map(self.run_simulation_chunk,
-                          [chunk_size] * num_processes)
+ with multiprocessing.Pool(processes=num_processes) as pool:
+ results = pool.map(self.run_simulation_chunk,
+ [chunk_size] * num_processes)
 
-    return np.concatenate(results)
+ return np.concatenate(results)
 ```
 
 ### Memory Management
@@ -655,20 +655,20 @@ def parallel_monte_carlo(self, num_simulations: int) -> List[float]:
 **Multi-factor Approach**:
 ```python
 class AuthManager:
-    def __init__(self):
-        self.session_timeout = 3600  # 1 hour
-        self.max_failed_attempts = 3
-        self.lockout_duration = 900  # 15 minutes
+ def __init__(self):
+ self.session_timeout = 3600 # 1 hour
+ self.max_failed_attempts = 3
+ self.lockout_duration = 900 # 15 minutes
 
-    def enforce_password_policy(self, password: str) -> bool:
-        """
-        Enforce enterprise password policy
-        """
-        return (len(password) >= 8 and
-                any(c.isupper() for c in password) and
-                any(c.islower() for c in password) and
-                any(c.isdigit() for c in password) and
-                any(c in "!@#$%^&*" for c in password))
+ def enforce_password_policy(self, password: str) -> bool:
+ """
+ Enforce enterprise password policy
+ """
+ return (len(password) >= 8 and
+ any(c.isupper() for c in password) and
+ any(c.islower() for c in password) and
+ any(c.isdigit() for c in password) and
+ any(c in "!@#$%^&*" for c in password))
 ```
 
 ### Data Security
@@ -683,18 +683,18 @@ class AuthManager:
 **Compliance Requirements**:
 ```python
 def log_user_action(self, user_id: str, action: str, details: Dict):
-    """
-    Comprehensive audit logging for regulatory compliance
-    """
-    audit_entry = {
-        'timestamp': datetime.utcnow().isoformat(),
-        'user_id': user_id,
-        'action': action,
-        'details': json.dumps(details),
-        'ip_address': self.get_client_ip(),
-        'session_id': self.get_session_id()
-    }
-    self.audit_logger.info(json.dumps(audit_entry))
+ """
+ Comprehensive audit logging for regulatory compliance
+ """
+ audit_entry = {
+ 'timestamp': datetime.utcnow().isoformat(),
+ 'user_id': user_id,
+ 'action': action,
+ 'details': json.dumps(details),
+ 'ip_address': self.get_client_ip(),
+ 'session_id': self.get_session_id()
+ }
+ self.audit_logger.info(json.dumps(audit_entry))
 ```
 
 ---
@@ -705,7 +705,7 @@ def log_user_action(self, user_id: str, action: str, details: Dict):
 **Production Setup**:
 ```
 Load Balancer (Nginx) → Streamlit App Instances → Redis Cluster → Database
-                     → Monitoring (Prometheus) → Alerting (Grafana)
+ → Monitoring (Prometheus) → Alerting (Grafana)
 ```
 
 ### Scalability Considerations
@@ -723,25 +723,25 @@ Load Balancer (Nginx) → Streamlit App Instances → Redis Cluster → Database
 ### Monitoring & Observability
 ```python
 class PerformanceMonitor:
-    def __init__(self):
-        self.metrics = {}
-        self.prometheus_client = PrometheusClient()
+ def __init__(self):
+ self.metrics = {}
+ self.prometheus_client = PrometheusClient()
 
-    @contextmanager
-    def time_operation(self, operation_name: str):
-        """
-        Context manager for operation timing
-        """
-        start_time = time.time()
-        try:
-            yield
-        finally:
-            duration = time.time() - start_time
-            self.prometheus_client.histogram(
-                f'operation_duration_seconds',
-                duration,
-                labels={'operation': operation_name}
-            )
+ @contextmanager
+ def time_operation(self, operation_name: str):
+ """
+ Context manager for operation timing
+ """
+ start_time = time.time()
+ try:
+ yield
+ finally:
+ duration = time.time() - start_time
+ self.prometheus_client.histogram(
+ f'operation_duration_seconds',
+ duration,
+ labels={'operation': operation_name}
+ )
 ```
 
 ---
@@ -750,35 +750,35 @@ class PerformanceMonitor:
 
 ### Phase 2 Development
 1. **Machine Learning Integration**:
-   - LSTM models for volatility forecasting
-   - Anomaly detection for unusual market behavior
-   - Portfolio optimization using reinforcement learning
+ - LSTM models for volatility forecasting
+ - Anomaly detection for unusual market behavior
+ - Portfolio optimization using reinforcement learning
 
 2. **Advanced Risk Models**:
-   - Credit VaR with migration matrices
-   - Operational risk modeling
-   - Model risk quantification
+ - Credit VaR with migration matrices
+ - Operational risk modeling
+ - Model risk quantification
 
 3. **Real-time Data Integration**:
-   - Bloomberg API integration
-   - Reuters/Refinitiv data feeds
-   - Alternative data sources (satellite, social media)
+ - Bloomberg API integration
+ - Reuters/Refinitiv data feeds
+ - Alternative data sources (satellite, social media)
 
 ### Phase 3 Enterprise Features
 1. **Multi-tenancy Support**:
-   - Organizational hierarchy
-   - Role-based access control
-   - Data segregation
+ - Organizational hierarchy
+ - Role-based access control
+ - Data segregation
 
 2. **Advanced Analytics**:
-   - Attribution analysis
-   - Scenario generation using ML
-   - Dynamic hedging recommendations
+ - Attribution analysis
+ - Scenario generation using ML
+ - Dynamic hedging recommendations
 
 3. **Regulatory Extensions**:
-   - CCAR stress testing
-   - CECL expected credit loss modeling
-   - IFRS 9 compliance
+ - CCAR stress testing
+ - CECL expected credit loss modeling
+ - IFRS 9 compliance
 
 ---
 

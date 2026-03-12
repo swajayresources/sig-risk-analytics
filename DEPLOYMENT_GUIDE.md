@@ -47,70 +47,70 @@ sudo apt install -y htop iotop nethogs sysstat
 version: '3.8'
 
 services:
-  risk-engine:
-    image: risk-analytics:latest
-    deploy:
-      resources:
-        limits:
-          cpus: '8'
-          memory: 16G
-        reservations:
-          cpus: '4'
-          memory: 8G
-    environment:
-      - ENVIRONMENT=production
-      - LOG_LEVEL=WARNING
-      - WORKERS=8
-      - MAX_CONNECTIONS=5000
-    volumes:
-      - /opt/risk-engine/data:/app/data
-      - /opt/risk-engine/logs:/app/logs
-      - /opt/risk-engine/config:/app/config
-    ports:
-      - "8000:8000"
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+ risk-engine:
+ image: risk-analytics:latest
+ deploy:
+ resources:
+ limits:
+ cpus: '8'
+ memory: 16G
+ reservations:
+ cpus: '4'
+ memory: 8G
+ environment:
+ - ENVIRONMENT=production
+ - LOG_LEVEL=WARNING
+ - WORKERS=8
+ - MAX_CONNECTIONS=5000
+ volumes:
+ - /opt/risk-engine/data:/app/data
+ - /opt/risk-engine/logs:/app/logs
+ - /opt/risk-engine/config:/app/config
+ ports:
+ - "8000:8000"
+ restart: unless-stopped
+ healthcheck:
+ test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+ interval: 30s
+ timeout: 10s
+ retries: 3
 
-  # Database cluster setup
-  postgres:
-    image: postgres:15-alpine
-    deploy:
-      resources:
-        limits:
-          cpus: '4'
-          memory: 8G
-    environment:
-      POSTGRES_DB: risk_analytics
-      POSTGRES_USER: risk_user
-      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    secrets:
-      - postgres_password
-    restart: unless-stopped
+ # Database cluster setup
+ postgres:
+ image: postgres:15-alpine
+ deploy:
+ resources:
+ limits:
+ cpus: '4'
+ memory: 8G
+ environment:
+ POSTGRES_DB: risk_analytics
+ POSTGRES_USER: risk_user
+ POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+ volumes:
+ - postgres_data:/var/lib/postgresql/data
+ secrets:
+ - postgres_password
+ restart: unless-stopped
 
-  redis-cluster:
-    image: redis:7-alpine
-    command: redis-server --cluster-enabled yes --cluster-config-file nodes.conf
-    deploy:
-      replicas: 6
-      resources:
-        limits:
-          cpus: '2'
-          memory: 4G
-    restart: unless-stopped
+ redis-cluster:
+ image: redis:7-alpine
+ command: redis-server --cluster-enabled yes --cluster-config-file nodes.conf
+ deploy:
+ replicas: 6
+ resources:
+ limits:
+ cpus: '2'
+ memory: 4G
+ restart: unless-stopped
 
 secrets:
-  postgres_password:
-    external: true
+ postgres_password:
+ external: true
 
 volumes:
-  postgres_data:
-    driver: local
+ postgres_data:
+ driver: local
 ```
 
 #### Deployment Commands
@@ -136,32 +136,32 @@ docker-compose -f docker-compose.prod.yml logs -f
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: risk-engine
-  labels:
-    name: risk-engine
+ name: risk-engine
+ labels:
+ name: risk-engine
 
 ---
 # k8s/configmap.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: risk-config
-  namespace: risk-engine
+ name: risk-config
+ namespace: risk-engine
 data:
-  risk_config.yaml: |
-    # Production risk configuration
-    position_engine:
-      max_positions: 1000000
-      monitoring_interval_ms: 100
+ risk_config.yaml: |
+ # Production risk configuration
+ position_engine:
+ max_positions: 1000000
+ monitoring_interval_ms: 100
 
-    risk_calculation:
-      monte_carlo:
-        default_scenarios: 100000
-        num_threads: 0  # Auto-detect
+ risk_calculation:
+ monte_carlo:
+ default_scenarios: 100000
+ num_threads: 0 # Auto-detect
 
-    performance:
-      computation_targets:
-        max_var_calculation_time_ms: 5
+ performance:
+ computation_targets:
+ max_var_calculation_time_ms: 5
 ```
 
 #### Deployment Manifest
@@ -171,112 +171,112 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: risk-engine
-  namespace: risk-engine
+ name: risk-engine
+ namespace: risk-engine
 spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: risk-engine
-  template:
-    metadata:
-      labels:
-        app: risk-engine
-    spec:
-      containers:
-      - name: risk-engine
-        image: risk-analytics:latest
-        ports:
-        - containerPort: 8000
-        env:
-        - name: ENVIRONMENT
-          value: "production"
-        - name: LOG_LEVEL
-          value: "INFO"
-        - name: POSTGRES_URL
-          valueFrom:
-            secretKeyRef:
-              name: database-secrets
-              key: postgres-url
-        - name: REDIS_URL
-          valueFrom:
-            secretKeyRef:
-              name: database-secrets
-              key: redis-url
-        resources:
-          requests:
-            cpu: "2"
-            memory: "4Gi"
-          limits:
-            cpu: "8"
-            memory: "16Gi"
-        volumeMounts:
-        - name: config-volume
-          mountPath: /app/config
-        - name: data-volume
-          mountPath: /app/data
-        livenessProbe:
-          httpGet:
-            path: /health
-            port: 8000
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /health
-            port: 8000
-          initialDelaySeconds: 5
-          periodSeconds: 5
-      volumes:
-      - name: config-volume
-        configMap:
-          name: risk-config
-      - name: data-volume
-        persistentVolumeClaim:
-          claimName: risk-data-pvc
+ replicas: 3
+ selector:
+ matchLabels:
+ app: risk-engine
+ template:
+ metadata:
+ labels:
+ app: risk-engine
+ spec:
+ containers:
+ - name: risk-engine
+ image: risk-analytics:latest
+ ports:
+ - containerPort: 8000
+ env:
+ - name: ENVIRONMENT
+ value: "production"
+ - name: LOG_LEVEL
+ value: "INFO"
+ - name: POSTGRES_URL
+ valueFrom:
+ secretKeyRef:
+ name: database-secrets
+ key: postgres-url
+ - name: REDIS_URL
+ valueFrom:
+ secretKeyRef:
+ name: database-secrets
+ key: redis-url
+ resources:
+ requests:
+ cpu: "2"
+ memory: "4Gi"
+ limits:
+ cpu: "8"
+ memory: "16Gi"
+ volumeMounts:
+ - name: config-volume
+ mountPath: /app/config
+ - name: data-volume
+ mountPath: /app/data
+ livenessProbe:
+ httpGet:
+ path: /health
+ port: 8000
+ initialDelaySeconds: 30
+ periodSeconds: 10
+ readinessProbe:
+ httpGet:
+ path: /health
+ port: 8000
+ initialDelaySeconds: 5
+ periodSeconds: 5
+ volumes:
+ - name: config-volume
+ configMap:
+ name: risk-config
+ - name: data-volume
+ persistentVolumeClaim:
+ claimName: risk-data-pvc
 
 ---
 # k8s/service.yaml
 apiVersion: v1
 kind: Service
 metadata:
-  name: risk-engine-service
-  namespace: risk-engine
+ name: risk-engine-service
+ namespace: risk-engine
 spec:
-  selector:
-    app: risk-engine
-  ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 8000
-  type: LoadBalancer
+ selector:
+ app: risk-engine
+ ports:
+ - protocol: TCP
+ port: 80
+ targetPort: 8000
+ type: LoadBalancer
 
 ---
 # k8s/ingress.yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: risk-engine-ingress
-  namespace: risk-engine
-  annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+ name: risk-engine-ingress
+ namespace: risk-engine
+ annotations:
+ nginx.ingress.kubernetes.io/rewrite-target: /
+ cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
-  tls:
-  - hosts:
-    - risk.yourdomain.com
-    secretName: risk-engine-tls
-  rules:
-  - host: risk.yourdomain.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: risk-engine-service
-            port:
-              number: 80
+ tls:
+ - hosts:
+ - risk.yourdomain.com
+ secretName: risk-engine-tls
+ rules:
+ - host: risk.yourdomain.com
+ http:
+ paths:
+ - path: /
+ pathType: Prefix
+ backend:
+ service:
+ name: risk-engine-service
+ port:
+ number: 80
 ```
 
 #### Database Setup
@@ -286,53 +286,53 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: postgres
-  namespace: risk-engine
+ name: postgres
+ namespace: risk-engine
 spec:
-  serviceName: postgres
-  replicas: 1
-  selector:
-    matchLabels:
-      app: postgres
-  template:
-    metadata:
-      labels:
-        app: postgres
-    spec:
-      containers:
-      - name: postgres
-        image: postgres:15
-        env:
-        - name: POSTGRES_DB
-          value: "risk_analytics"
-        - name: POSTGRES_USER
-          value: "risk_user"
-        - name: POSTGRES_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: database-secrets
-              key: postgres-password
-        ports:
-        - containerPort: 5432
-        volumeMounts:
-        - name: postgres-storage
-          mountPath: /var/lib/postgresql/data
-        resources:
-          requests:
-            cpu: "1"
-            memory: "2Gi"
-          limits:
-            cpu: "4"
-            memory: "8Gi"
-  volumeClaimTemplates:
-  - metadata:
-      name: postgres-storage
-    spec:
-      accessModes: ["ReadWriteOnce"]
-      resources:
-        requests:
-          storage: 100Gi
-      storageClassName: ssd
+ serviceName: postgres
+ replicas: 1
+ selector:
+ matchLabels:
+ app: postgres
+ template:
+ metadata:
+ labels:
+ app: postgres
+ spec:
+ containers:
+ - name: postgres
+ image: postgres:15
+ env:
+ - name: POSTGRES_DB
+ value: "risk_analytics"
+ - name: POSTGRES_USER
+ value: "risk_user"
+ - name: POSTGRES_PASSWORD
+ valueFrom:
+ secretKeyRef:
+ name: database-secrets
+ key: postgres-password
+ ports:
+ - containerPort: 5432
+ volumeMounts:
+ - name: postgres-storage
+ mountPath: /var/lib/postgresql/data
+ resources:
+ requests:
+ cpu: "1"
+ memory: "2Gi"
+ limits:
+ cpu: "4"
+ memory: "8Gi"
+ volumeClaimTemplates:
+ - metadata:
+ name: postgres-storage
+ spec:
+ accessModes: ["ReadWriteOnce"]
+ resources:
+ requests:
+ storage: 100Gi
+ storageClassName: ssd
 ```
 
 #### Deployment Commands
@@ -343,10 +343,10 @@ kubectl apply -f k8s/namespace.yaml
 
 # Create secrets
 kubectl create secret generic database-secrets \
-  --from-literal=postgres-password=your_secure_password \
-  --from-literal=postgres-url=postgresql://risk_user:your_secure_password@postgres:5432/risk_analytics \
-  --from-literal=redis-url=redis://redis:6379 \
-  -n risk-engine
+ --from-literal=postgres-password=your_secure_password \
+ --from-literal=postgres-url=postgresql://risk_user:your_secure_password@postgres:5432/risk_analytics \
+ --from-literal=redis-url=redis://redis:6379 \
+ -n risk-engine
 
 # Deploy all components
 kubectl apply -f k8s/
@@ -363,15 +363,15 @@ kubectl logs -f deployment/risk-engine -n risk-engine
 ```bash
 # Create EKS cluster
 eksctl create cluster \
-  --name risk-analytics \
-  --version 1.24 \
-  --region us-east-1 \
-  --nodegroup-name standard-workers \
-  --node-type m5.2xlarge \
-  --nodes 3 \
-  --nodes-min 1 \
-  --nodes-max 10 \
-  --managed
+ --name risk-analytics \
+ --version 1.24 \
+ --region us-east-1 \
+ --nodegroup-name standard-workers \
+ --node-type m5.2xlarge \
+ --nodes 3 \
+ --nodes-min 1 \
+ --nodes-max 10 \
+ --managed
 
 # Install ALB Ingress Controller
 kubectl apply -k "github.com/aws/eks-charts/stable/aws-load-balancer-controller//crds?ref=master"
@@ -379,10 +379,10 @@ kubectl apply -k "github.com/aws/eks-charts/stable/aws-load-balancer-controller/
 # Deploy using Helm
 helm repo add risk-engine https://charts.risk-engine.com
 helm install risk-engine risk-engine/risk-analytics \
-  --namespace risk-engine \
-  --create-namespace \
-  --set ingress.enabled=true \
-  --set ingress.annotations."kubernetes\.io/ingress\.class"=alb
+ --namespace risk-engine \
+ --create-namespace \
+ --set ingress.enabled=true \
+ --set ingress.annotations."kubernetes\.io/ingress\.class"=alb
 ```
 
 #### Azure Deployment with AKS
@@ -393,12 +393,12 @@ az group create --name rg-risk-analytics --location eastus
 
 # Create AKS cluster
 az aks create \
-  --resource-group rg-risk-analytics \
-  --name aks-risk-analytics \
-  --node-count 3 \
-  --node-vm-size Standard_D8s_v3 \
-  --enable-addons monitoring \
-  --generate-ssh-keys
+ --resource-group rg-risk-analytics \
+ --name aks-risk-analytics \
+ --node-count 3 \
+ --node-vm-size Standard_D8s_v3 \
+ --enable-addons monitoring \
+ --generate-ssh-keys
 
 # Get credentials
 az aks get-credentials --resource-group rg-risk-analytics --name aks-risk-analytics
@@ -412,12 +412,12 @@ kubectl apply -f k8s/
 ```bash
 # Create GKE cluster
 gcloud container clusters create risk-analytics \
-  --machine-type=n1-standard-8 \
-  --num-nodes=3 \
-  --zone=us-central1-a \
-  --enable-autoscaling \
-  --min-nodes=1 \
-  --max-nodes=10
+ --machine-type=n1-standard-8 \
+ --num-nodes=3 \
+ --zone=us-central1-a \
+ --enable-autoscaling \
+ --min-nodes=1 \
+ --max-nodes=10
 
 # Get credentials
 gcloud container clusters get-credentials risk-analytics --zone=us-central1-a
@@ -438,23 +438,23 @@ sudo certbot certonly --standalone -d risk.yourdomain.com
 # Configure nginx with SSL
 cat > /etc/nginx/sites-available/risk-engine << EOF
 server {
-    listen 443 ssl http2;
-    server_name risk.yourdomain.com;
+ listen 443 ssl http2;
+ server_name risk.yourdomain.com;
 
-    ssl_certificate /etc/letsencrypt/live/risk.yourdomain.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/risk.yourdomain.com/privkey.pem;
+ ssl_certificate /etc/letsencrypt/live/risk.yourdomain.com/fullchain.pem;
+ ssl_certificate_key /etc/letsencrypt/live/risk.yourdomain.com/privkey.pem;
 
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512;
-    ssl_prefer_server_ciphers off;
+ ssl_protocols TLSv1.2 TLSv1.3;
+ ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512;
+ ssl_prefer_server_ciphers off;
 
-    location / {
-        proxy_pass http://localhost:8000;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-    }
+ location / {
+ proxy_pass http://localhost:8000;
+ proxy_set_header Host \$host;
+ proxy_set_header X-Real-IP \$remote_addr;
+ proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+ proxy_set_header X-Forwarded-Proto \$scheme;
+ }
 }
 EOF
 
@@ -472,15 +472,15 @@ sudo ufw default deny incoming
 sudo ufw default allow outgoing
 
 # Allow specific ports
-sudo ufw allow 22/tcp      # SSH
-sudo ufw allow 80/tcp      # HTTP
-sudo ufw allow 443/tcp     # HTTPS
-sudo ufw allow 8000/tcp    # Risk Engine API
+sudo ufw allow 22/tcp # SSH
+sudo ufw allow 80/tcp # HTTP
+sudo ufw allow 443/tcp # HTTPS
+sudo ufw allow 8000/tcp # Risk Engine API
 
 # Database access (internal only)
-sudo ufw allow from 10.0.0.0/8 to any port 5432  # PostgreSQL
-sudo ufw allow from 10.0.0.0/8 to any port 6379  # Redis
-sudo ufw allow from 10.0.0.0/8 to any port 8123  # ClickHouse
+sudo ufw allow from 10.0.0.0/8 to any port 5432 # PostgreSQL
+sudo ufw allow from 10.0.0.0/8 to any port 6379 # Redis
+sudo ufw allow from 10.0.0.0/8 to any port 8123 # ClickHouse
 ```
 
 ### Authentication Setup
@@ -507,35 +507,35 @@ print(f'Hash: {api_key_hash}')
 ```yaml
 # monitoring/prometheus.yml
 global:
-  scrape_interval: 15s
+ scrape_interval: 15s
 
 scrape_configs:
-  - job_name: 'risk-engine'
-    static_configs:
-      - targets: ['risk-engine:8000']
-    metrics_path: '/metrics'
-    scrape_interval: 5s
+ - job_name: 'risk-engine'
+ static_configs:
+ - targets: ['risk-engine:8000']
+ metrics_path: '/metrics'
+ scrape_interval: 5s
 
-  - job_name: 'node-exporter'
-    static_configs:
-      - targets: ['node-exporter:9100']
+ - job_name: 'node-exporter'
+ static_configs:
+ - targets: ['node-exporter:9100']
 
-  - job_name: 'postgres'
-    static_configs:
-      - targets: ['postgres-exporter:9187']
+ - job_name: 'postgres'
+ static_configs:
+ - targets: ['postgres-exporter:9187']
 
-  - job_name: 'redis'
-    static_configs:
-      - targets: ['redis-exporter:9121']
+ - job_name: 'redis'
+ static_configs:
+ - targets: ['redis-exporter:9121']
 
 rule_files:
-  - "alert_rules.yml"
+ - "alert_rules.yml"
 
 alerting:
-  alertmanagers:
-    - static_configs:
-        - targets:
-          - alertmanager:9093
+ alertmanagers:
+ - static_configs:
+ - targets:
+ - alertmanager:9093
 ```
 
 ### Alert Rules
@@ -544,84 +544,84 @@ alerting:
 # monitoring/alert_rules.yml
 groups:
 - name: risk-engine-alerts
-  rules:
-  - alert: HighLatency
-    expr: risk_engine_request_duration_seconds{quantile="0.95"} > 0.01
-    for: 2m
-    labels:
-      severity: warning
-    annotations:
-      summary: "High request latency detected"
-      description: "95th percentile latency is {{ $value }}s"
+ rules:
+ - alert: HighLatency
+ expr: risk_engine_request_duration_seconds{quantile="0.95"} > 0.01
+ for: 2m
+ labels:
+ severity: warning
+ annotations:
+ summary: "High request latency detected"
+ description: "95th percentile latency is {{ $value }}s"
 
-  - alert: VaRCalculationFailed
-    expr: risk_engine_var_calculation_failures_total > 0
-    for: 1m
-    labels:
-      severity: critical
-    annotations:
-      summary: "VaR calculation failures detected"
-      description: "{{ $value }} VaR calculations failed in the last minute"
+ - alert: VaRCalculationFailed
+ expr: risk_engine_var_calculation_failures_total > 0
+ for: 1m
+ labels:
+ severity: critical
+ annotations:
+ summary: "VaR calculation failures detected"
+ description: "{{ $value }} VaR calculations failed in the last minute"
 
-  - alert: HighMemoryUsage
-    expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes > 0.9
-    for: 5m
-    labels:
-      severity: warning
-    annotations:
-      summary: "High memory usage"
-      description: "Memory usage is above 90%"
+ - alert: HighMemoryUsage
+ expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes > 0.9
+ for: 5m
+ labels:
+ severity: warning
+ annotations:
+ summary: "High memory usage"
+ description: "Memory usage is above 90%"
 
-  - alert: DatabaseConnectionLoss
-    expr: risk_engine_database_connections_active == 0
-    for: 1m
-    labels:
-      severity: critical
-    annotations:
-      summary: "Database connection lost"
-      description: "No active database connections"
+ - alert: DatabaseConnectionLoss
+ expr: risk_engine_database_connections_active == 0
+ for: 1m
+ labels:
+ severity: critical
+ annotations:
+ summary: "Database connection lost"
+ description: "No active database connections"
 ```
 
 ### Grafana Dashboards
 
 ```json
 {
-  "dashboard": {
-    "id": null,
-    "title": "Risk Engine Dashboard",
-    "panels": [
-      {
-        "title": "Request Rate",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "rate(risk_engine_requests_total[5m])",
-            "legendFormat": "{{method}} {{endpoint}}"
-          }
-        ]
-      },
-      {
-        "title": "VaR Calculation Time",
-        "type": "graph",
-        "targets": [
-          {
-            "expr": "risk_engine_var_calculation_duration_seconds",
-            "legendFormat": "VaR Calculation Time"
-          }
-        ]
-      },
-      {
-        "title": "Portfolio Value",
-        "type": "singlestat",
-        "targets": [
-          {
-            "expr": "risk_engine_portfolio_value_total",
-            "legendFormat": "Portfolio Value"
-          }
-        ]
-      }
-    ]
-  }
+ "dashboard": {
+ "id": null,
+ "title": "Risk Engine Dashboard",
+ "panels": [
+ {
+ "title": "Request Rate",
+ "type": "graph",
+ "targets": [
+ {
+ "expr": "rate(risk_engine_requests_total[5m])",
+ "legendFormat": "{{method}} {{endpoint}}"
+ }
+ ]
+ },
+ {
+ "title": "VaR Calculation Time",
+ "type": "graph",
+ "targets": [
+ {
+ "expr": "risk_engine_var_calculation_duration_seconds",
+ "legendFormat": "VaR Calculation Time"
+ }
+ ]
+ },
+ {
+ "title": "Portfolio Value",
+ "type": "singlestat",
+ "targets": [
+ {
+ "expr": "risk_engine_portfolio_value_total",
+ "legendFormat": "Portfolio Value"
+ }
+ ]
+ }
+ ]
+ }
 }
 ```
 
@@ -674,11 +674,11 @@ SELECT pg_reload_conf();
 
 -- Create optimized indexes
 CREATE INDEX CONCURRENTLY idx_positions_symbol_time
-  ON positions (symbol, last_update DESC);
+ ON positions (symbol, last_update DESC);
 
 CREATE INDEX CONCURRENTLY idx_trades_timestamp
-  ON trades (timestamp DESC)
-  WHERE timestamp > NOW() - INTERVAL '30 days';
+ ON trades (timestamp DESC)
+ WHERE timestamp > NOW() - INTERVAL '30 days';
 ```
 
 #### Redis Optimization
@@ -717,7 +717,7 @@ export OMP_PLACES=cores
 numactl --hardware
 
 # Bind process to specific NUMA node
-numactl --cpunodebind=0 --membind=0 ./risk_engine
+numactl --cpunodebind=0 --membind=0./risk_engine
 
 # Configure Docker with NUMA awareness
 docker run --cpuset-cpus="0-7" --cpuset-mems="0" risk-analytics:latest
@@ -732,23 +732,23 @@ docker run --cpuset-cpus="0-7" --cpuset-mems="0" risk-analytics:latest
 ```nginx
 # /etc/nginx/nginx.conf
 upstream risk_engine_backend {
-    least_conn;
-    server 10.0.1.10:8000 weight=3;
-    server 10.0.1.11:8000 weight=3;
-    server 10.0.1.12:8000 weight=3;
-    keepalive 32;
+ least_conn;
+ server 10.0.1.10:8000 weight=3;
+ server 10.0.1.11:8000 weight=3;
+ server 10.0.1.12:8000 weight=3;
+ keepalive 32;
 }
 
 server {
-    listen 80;
-    location / {
-        proxy_pass http://risk_engine_backend;
-        proxy_http_version 1.1;
-        proxy_set_header Connection "";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    }
+ listen 80;
+ location / {
+ proxy_pass http://risk_engine_backend;
+ proxy_http_version 1.1;
+ proxy_set_header Connection "";
+ proxy_set_header Host $host;
+ proxy_set_header X-Real-IP $remote_addr;
+ proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+ }
 }
 ```
 
@@ -759,35 +759,35 @@ server {
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: risk-engine-hpa
-  namespace: risk-engine
+ name: risk-engine-hpa
+ namespace: risk-engine
 spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: risk-engine
-  minReplicas: 3
-  maxReplicas: 20
-  metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: 70
-  - type: Resource
-    resource:
-      name: memory
-      target:
-        type: Utilization
-        averageUtilization: 80
-  - type: Pods
-    pods:
-      metric:
-        name: risk_engine_requests_per_second
-      target:
-        type: AverageValue
-        averageValue: "100"
+ scaleTargetRef:
+ apiVersion: apps/v1
+ kind: Deployment
+ name: risk-engine
+ minReplicas: 3
+ maxReplicas: 20
+ metrics:
+ - type: Resource
+ resource:
+ name: cpu
+ target:
+ type: Utilization
+ averageUtilization: 70
+ - type: Resource
+ resource:
+ name: memory
+ target:
+ type: Utilization
+ averageUtilization: 80
+ - type: Pods
+ pods:
+ metric:
+ name: risk_engine_requests_per_second
+ target:
+ type: AverageValue
+ averageValue: "100"
 ```
 
 ### Database Scaling
@@ -811,9 +811,9 @@ sudo -u postgres pg_ctl start -D /var/lib/postgresql/replica
 ```bash
 # Create Redis cluster
 redis-cli --cluster create \
-  10.0.1.10:7000 10.0.1.11:7000 10.0.1.12:7000 \
-  10.0.1.10:7001 10.0.1.11:7001 10.0.1.12:7001 \
-  --cluster-replicas 1
+ 10.0.1.10:7000 10.0.1.11:7000 10.0.1.12:7000 \
+ 10.0.1.10:7001 10.0.1.11:7001 10.0.1.12:7001 \
+ --cluster-replicas 1
 ```
 
 ## 🔄 Backup and Recovery
@@ -853,8 +853,8 @@ aws s3 cp "$BACKUP_DIR" s3://risk-engine-backups/$(date +%Y/%m/%d)/ --recursive
 
 BACKUP_FILE=$1
 if [ -z "$BACKUP_FILE" ]; then
-    echo "Usage: $0 <backup_file>"
-    exit 1
+ echo "Usage: $0 <backup_file>"
+ exit 1
 fi
 
 # Stop services
@@ -894,8 +894,8 @@ ps -eLf | grep risk_engine | wc -l
 ```bash
 # Monitor memory usage over time
 while true; do
-    ps -p $(pgrep risk_engine) -o pid,vsz,rss,comm --no-headers
-    sleep 60
+ ps -p $(pgrep risk_engine) -o pid,vsz,rss,comm --no-headers
+ sleep 60
 done > memory_usage.log
 
 # Check for memory fragmentation
@@ -916,13 +916,13 @@ LIMIT 10;
 
 -- Check table sizes
 SELECT schemaname, tablename,
-       pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) as size
+ pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) as size
 FROM pg_tables
 ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
 
 -- Check indexes
 SELECT schemaname, tablename, indexname,
-       pg_size_pretty(pg_relation_size(indexname)) as size
+ pg_size_pretty(pg_relation_size(indexname)) as size
 FROM pg_indexes
 ORDER BY pg_relation_size(indexname) DESC;
 ```
@@ -967,12 +967,11 @@ docker-compose down
 
 # Check database integrity
 docker run --rm -v postgres_data:/var/lib/postgresql/data postgres:15 \
-    pg_ctl start && pg_dump --data-only risk_analytics > integrity_check.sql
+ pg_ctl start && pg_dump --data-only risk_analytics > integrity_check.sql
 
 # Restore from latest backup if corruption detected
 if [ $? -ne 0 ]; then
-    echo "Database corruption detected, restoring from backup..."
-    ./restore.sh /opt/backups/latest_postgres.sql.gz
+ echo "Database corruption detected, restoring from backup..."./restore.sh /opt/backups/latest_postgres.sql.gz
 fi
 
 # Restart services
