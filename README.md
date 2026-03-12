@@ -69,3 +69,9 @@ SIG2/
 ├── web/ # React frontend (optional)
 └── src/ # C++ engine (optional)
 ```
+
+## Demo
+
+**[▶ Watch Demo Video](https://github.com/swajayresources/sig-risk-analytics/releases/download/v1.0.0/Professional.Risk.Management.Dashboard.-.Google.Chrome.2025-09-28.11-21-01.mp4)**
+
+> Full demo video available in the [Releases](https://github.com/swajayresources/sig-risk-analytics/releases/tag/v1.0.0) section.
